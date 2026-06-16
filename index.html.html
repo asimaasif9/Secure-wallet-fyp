@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Digital Wallet — Blockchain & Post-Quantum</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal: #00F5A0;
+    --teal-dark: #0ABF7A;
+    --teal-mid: #1D9E75;
+    --teal-deep: #0F6E56;
+    --blue-acc: #4DA3FF;
+    --purple-acc: #7B61FF;
+    --bg: #ffffff;
+    --bg-sec: #f7f8fa;
+    --bg-card: #ffffff;
+    --border: #e8eaf0;
+    --text: #0a0e1a;
+    --text-sec: #4a5568;
+    --text-muted: #8896b3;
+    --sidebar-bg: #0a0e1a;
+    --sidebar-text: #cdd5e0;
+    --sidebar-active: #00F5A0;
+    --nav-h: 64px;
+    --sidebar-w: 220px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ===== TOP NAV ===== */
+  .topnav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: var(--nav-h);
+    background: #0a0e1a;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px;
+    border-bottom: 1px solid rgba(0,245,160,0.15);
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 16px; font-weight: 700; color: #fff; text-decoration: none;
+  }
+  .nav-brand .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--teal), var(--blue-acc));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .nav-brand span { color: var(--teal); }
+  .nav-links { display: flex; align-items: center; gap: 6px; }
+  .nav-links a {
+    color: #aab4c8; text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 8px 14px; border-radius: 8px; transition: all 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,0.07); }
+  .nav-links a.active { color: var(--teal); }
+  .nav-right { display: flex; align-items: center; gap: 12px; }
+  .nav-badge {
+    background: rgba(0,245,160,0.12); color: var(--teal);
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid rgba(0,245,160,0.3);
+  }
+  .btn-launch {
+    background: var(--teal); color: #0a0e1a;
+    font-size: 13px; font-weight: 700; padding: 9px 20px; border-radius: 10px;
+    border: none; cursor: pointer; text-decoration: none;
+  }
+
+  /* ===== SIDEBAR + LAYOUT ===== */
+  .layout { display: flex; padding-top: var(--nav-h); min-height: 100vh; }
+  .sidebar {
+    position: fixed; top: var(--nav-h); left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: #0d1220;
+    border-right: 1px solid rgba(0,245,160,0.1);
+    padding: 24px 0;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1px; color: #3a4560;
+    padding: 0 20px 8px;
+  }
+  .sidebar-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; color: var(--sidebar-text);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; border-left: 3px solid transparent;
+    text-decoration: none;
+  }
+  .sidebar-link:hover { background: rgba(255,255,255,0.04); color: #fff; }
+  .sidebar-link.active {
+    color: var(--teal); background: rgba(0,245,160,0.08);
+    border-left-color: var(--teal);
+  }
+  .sidebar-icon { font-size: 16px; opacity: 0.7; }
+  .sidebar-link.active .sidebar-icon { opacity: 1; }
+  .sidebar-badge {
+    margin-left: auto; background: rgba(0,245,160,0.15); color: var(--teal);
+    font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+  }
+
+  /* ===== MAIN CONTENT ===== */
+  .main { margin-left: var(--sidebar-w); flex: 1; background: #f6f8fc; min-height: calc(100vh - var(--nav-h)); }
+  .page { display: none; padding: 32px; }
+  .page.active { display: block; }
+
+  /* ===== PAGE HEADER ===== */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;
+  }
+  .page-title { font-size: 22px; font-weight: 700; color: var(--text); }
+  .page-sub { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+  .header-actions { display: flex; gap: 10px; }
+
+  /* ===== STAT CARDS ===== */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px;
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent, var(--teal));
+  }
+  .stat-label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+  .stat-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; }
+  .stat-change { font-size: 12px; font-weight: 600; margin-top: 6px; }
+  .stat-change.up { color: #0abf7a; }
+  .stat-change.down { color: #e24b4a; }
+  .stat-icon {
+    position: absolute; right: 16px; top: 16px;
+    width: 38px; height: 38px; border-radius: 10px;
+    background: rgba(0,245,160,0.1); display: flex; align-items: center;
+    justify-content: center; font-size: 18px; color: var(--teal);
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+  }
+  .card-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+  .card-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* ===== DASHBOARD CHART ===== */
+  .chart-bar-wrap {
+    display: flex; align-items: flex-end; gap: 8px; height: 160px; margin-top: 8px;
+    padding-top: 12px;
+  }
+  .chart-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .chart-bar {
+    width: 100%; border-radius: 6px 6px 0 0;
+    background: linear-gradient(180deg, var(--teal) 0%, var(--teal-dark) 100%);
+    transition: height 0.4s;
+    min-height: 8px;
+  }
+  .chart-bar.alt { background: linear-gradient(180deg, #4DA3FF 0%, #2563eb 100%); }
+  .chart-label { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+
+  /* ===== TRANSACTIONS ===== */
+  .tx-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px solid #f0f2f8;
+  }
+  .tx-item:last-child { border-bottom: none; }
+  .tx-icon {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+  }
+  .tx-icon.eth { background: #E8E6FF; color: #7B61FF; }
+  .tx-icon.btc { background: #FFF3E0; color: #F7931A; }
+  .tx-icon.usdc { background: #E3F2FD; color: #2979ff; }
+  .tx-icon.received { background: #E8F5E9; color: #2e7d32; }
+  .tx-info { flex: 1; }
+  .tx-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .tx-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .tx-amount { font-size: 14px; font-weight: 700; }
+  .tx-amount.pos { color: #0abf7a; }
+  .tx-amount.neg { color: #e24b4a; }
+  .tx-status {
+    font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 8px;
+  }
+  .tx-status.confirmed { background: #E8F5E9; color: #2e7d32; }
+  .tx-status.pending { background: #FFF8E1; color: #f57f17; }
+
+  /* ===== SECURITY SCORE ===== */
+  .security-score-wrap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0;
+  }
+  .score-ring {
+    position: relative; width: 120px; height: 120px;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-ring-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .score-number { font-size: 28px; font-weight: 800; color: var(--teal-mid); }
+  .score-max { font-size: 11px; color: var(--text-muted); }
+  .score-label { font-size: 13px; font-weight: 600; color: var(--teal-mid); margin-top: 6px; }
+
+  .security-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #f0f2f8; font-size: 13px;
+  }
+  .security-item:last-child { border-bottom: none; }
+  .sec-name { color: var(--text); font-weight: 500; }
+  .sec-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 8px;
+  }
+  .sec-badge.active { background: #E8F5E9; color: #2e7d32; }
+  .sec-badge.strong { background: #E8F5E9; color: #2e7d32; }
+  .sec-badge.enabled { background: #E3F2FD; color: #1565c0; }
+  .sec-badge.completed { background: #E8F5E9; color: #2e7d32; }
+
+  /* ===== ASSET ALLOCATION ===== */
+  .alloc-list { list-style: none; }
+  .alloc-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; font-size: 13px; }
+  .alloc-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .alloc-name { flex: 1; color: var(--text); font-weight: 500; }
+  .alloc-pct { color: var(--text-sec); font-weight: 600; }
+  .alloc-bar-wrap { width: 80px; height: 6px; background: #f0f2f8; border-radius: 3px; }
+  .alloc-bar { height: 100%; border-radius: 3px; }
+
+  /* ===== SEND/RECEIVE ===== */
+  .form-group { margin-bottom: 18px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 6px; display: block; }
+  .form-input {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+    border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px;
+    color: var(--text); background: #fff; outline: none; transition: border 0.2s;
+  }
+  .form-input:focus { border-color: var(--teal-mid); }
+  .form-select {
+    width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+    border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 14px;
+    color: var(--text); background: #fff; outline: none; cursor: pointer;
+    appearance: none;
+  }
+  .input-suffix {
+    display: flex; align-items: center; gap: 0;
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  }
+  .input-suffix input {
+    flex: 1; border: none; padding: 11px 14px;
+    font-family: 'Inter', sans-serif; font-size: 14px; outline: none;
+  }
+  .input-suffix span {
+    background: #f6f8fc; padding: 11px 14px; font-size: 13px;
+    font-weight: 600; color: var(--text-sec); border-left: 1px solid var(--border);
+  }
+  .btn-primary {
+    background: var(--teal-mid); color: #fff; border: none;
+    border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 700;
+    cursor: pointer; width: 100%; font-family: 'Inter', sans-serif; transition: background 0.2s;
+  }
+  .btn-primary:hover { background: var(--teal-deep); }
+  .btn-outline {
+    background: #fff; color: var(--text); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 24px; font-size: 14px; font-weight: 600;
+    cursor: pointer; width: 100%; font-family: 'Inter', sans-serif; transition: all 0.2s;
+  }
+  .btn-outline:hover { background: #f6f8fc; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+
+  /* QR CODE DISPLAY */
+  .qr-box {
+    background: #f6f8fc; border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 12px;
+  }
+  .qr-grid { display: grid; grid-template-columns: repeat(15, 14px); gap: 2px; }
+  .qr-cell { width: 14px; height: 14px; background: transparent; border-radius: 1px; }
+  .qr-cell.b { background: #0a0e1a; }
+  .wallet-addr {
+    font-size: 12px; font-family: monospace; color: var(--text-sec);
+    background: #fff; border: 1px solid var(--border); padding: 8px 14px; border-radius: 8px;
+    word-break: break-all; text-align: center;
+  }
+
+  /* ===== TOGGLE ===== */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .toggle-label { font-size: 13px; font-weight: 500; color: var(--text); }
+  .toggle-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .toggle {
+    position: relative; width: 44px; height: 24px;
+    background: var(--teal-mid); border-radius: 12px; cursor: pointer; flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; right: 3px;
+    width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: right 0.2s;
+  }
+  .toggle.off { background: #d0d5e8; }
+  .toggle.off::after { right: auto; left: 3px; }
+
+  /* ===== PROFILE ===== */
+  .profile-header {
+    display: flex; align-items: center; gap: 16px; padding: 20px 0; border-bottom: 1px solid #f0f2f8; margin-bottom: 20px;
+  }
+  .avatar {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--blue-acc) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800; color: #0a0e1a; flex-shrink: 0;
+  }
+  .settings-item {
+    display: flex; align-items: center; gap: 12px; padding: 14px 0;
+    border-bottom: 1px solid #f0f2f8; cursor: pointer; transition: background 0.15s;
+  }
+  .settings-item:hover { background: #f9fafb; margin: 0 -22px; padding: 14px 22px; }
+  .settings-item:last-child { border-bottom: none; }
+  .settings-item-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #f0f2f8;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--text-sec);
+  }
+  .settings-item-info { flex: 1; }
+  .settings-item-title { font-size: 13px; font-weight: 600; color: var(--text); }
+  .settings-item-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .chevron { color: var(--text-muted); font-size: 16px; }
+
+  /* ===== SECURITY CENTER FULL ===== */
+  .security-action-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+    text-align: center; cursor: pointer; transition: border-color 0.2s;
+  }
+  .security-action-card:hover { border-color: var(--teal-mid); }
+  .sec-action-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: rgba(29,158,117,0.1); color: var(--teal-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin: 0 auto 10px;
+  }
+  .sec-action-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+  .sec-action-desc { font-size: 11px; color: var(--text-muted); }
+
+  /* ===== HERO (landing) ===== */
+  .hero {
+    background: linear-gradient(135deg, #0a0e1a 0%, #101827 60%, #0d1f1a 100%);
+    padding: 100px 60px 80px; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: space-between; gap: 40px;
+    min-height: calc(100vh - var(--nav-h));
+  }
+  .hero-bg-circles::before, .hero-bg-circles::after {
+    content: ''; position: absolute; border-radius: 50%; opacity: 0.07;
+  }
+  .hero-bg-circles::before {
+    width: 600px; height: 600px; background: var(--teal);
+    top: -200px; right: -100px;
+  }
+  .hero-bg-circles::after {
+    width: 400px; height: 400px; background: var(--blue-acc);
+    bottom: -150px; left: 200px;
+  }
+  .hero-content { max-width: 560px; position: relative; z-index: 2; }
+  .hero-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,245,160,0.1); border: 1px solid rgba(0,245,160,0.3);
+    color: var(--teal); font-size: 12px; font-weight: 700; padding: 6px 14px;
+    border-radius: 20px; margin-bottom: 24px; letter-spacing: 0.5px;
+  }
+  .hero-pill span { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.8); } }
+  .hero-title {
+    font-size: 52px; font-weight: 800; color: #fff; line-height: 1.1;
+    margin-bottom: 20px; letter-spacing: -1px;
+  }
+  .hero-title em { font-style: normal; color: var(--teal); }
+  .hero-desc { font-size: 16px; color: #8896b3; line-height: 1.7; margin-bottom: 36px; }
+  .hero-btns { display: flex; gap: 14px; }
+  .hero-btn-primary {
+    background: var(--teal); color: #0a0e1a; border: none;
+    padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .hero-btn-outline {
+    background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.2);
+    padding: 14px 28px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .hero-stats { display: flex; gap: 32px; margin-top: 40px; }
+  .hero-stat-num { font-size: 24px; font-weight: 800; color: #fff; }
+  .hero-stat-label { font-size: 11px; color: #8896b3; font-weight: 500; margin-top: 2px; }
+
+  .hero-visual { position: relative; z-index: 2; flex-shrink: 0; }
+  .phone-mockup {
+    width: 240px; height: 420px;
+    background: #141c2e; border-radius: 32px;
+    border: 2px solid rgba(255,255,255,0.1);
+    padding: 16px; position: relative; overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .phone-notch {
+    width: 80px; height: 20px; background: #0a0e1a;
+    border-radius: 10px; margin: 0 auto 16px;
+  }
+  .phone-balance-label { font-size: 10px; color: #8896b3; text-align: center; margin-bottom: 4px; }
+  .phone-balance { font-size: 26px; font-weight: 800; color: #fff; text-align: center; margin-bottom: 4px; }
+  .phone-change { font-size: 11px; color: var(--teal); text-align: center; margin-bottom: 16px; }
+  .phone-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .phone-action { text-align: center; }
+  .phone-action-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,0.06); margin: 0 auto 4px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--teal);
+  }
+  .phone-action-label { font-size: 9px; color: #8896b3; }
+  .phone-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 0 0 12px; }
+  .phone-tx-title { font-size: 11px; font-weight: 600; color: #fff; margin-bottom: 10px; }
+  .phone-tx { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .phone-tx-dot { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+  .phone-tx-info { flex: 1; }
+  .phone-tx-name { font-size: 10px; font-weight: 600; color: #e0e6f0; }
+  .phone-tx-time { font-size: 9px; color: #8896b3; }
+  .phone-tx-amt { font-size: 11px; font-weight: 700; }
+
+  /* floating badges */
+  .float-badge {
+    position: absolute; background: #fff; border-radius: 12px; padding: 10px 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; color: #0a0e1a; white-space: nowrap;
+  }
+  .float-badge .badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ===== FEATURES SECTION ===== */
+  .features-section {
+    background: var(--bg-sec); padding: 80px 60px;
+  }
+  .section-eyebrow { font-size: 12px; font-weight: 700; color: var(--teal-mid); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; }
+  .section-title { font-size: 36px; font-weight: 800; color: var(--text); margin-bottom: 12px; letter-spacing: -0.5px; }
+  .section-desc { font-size: 15px; color: var(--text-sec); max-width: 540px; line-height: 1.7; margin-bottom: 48px; }
+  .features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .feature-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 28px;
+    transition: box-shadow 0.2s; cursor: default;
+  }
+  .feature-card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.07); }
+  .feature-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .feature-icon.teal { background: rgba(29,158,117,0.1); color: var(--teal-mid); }
+  .feature-icon.blue { background: rgba(77,163,255,0.1); color: var(--blue-acc); }
+  .feature-icon.purple { background: rgba(123,97,255,0.1); color: var(--purple-acc); }
+  .feature-icon.orange { background: rgba(247,147,26,0.1); color: #F7931A; }
+  .feature-icon.red { background: rgba(226,75,74,0.1); color: #e24b4a; }
+  .feature-icon.green { background: rgba(10,191,122,0.1); color: #0abf7a; }
+  .feature-card-title { font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .feature-card-desc { font-size: 13px; color: var(--text-sec); line-height: 1.6; }
+
+  /* ===== TECH STACK ===== */
+  .tech-section { background: #0a0e1a; padding: 80px 60px; }
+  .tech-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .tech-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 24px; text-align: center;
+  }
+  .tech-icon { font-size: 28px; margin-bottom: 10px; }
+  .tech-name { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .tech-desc { font-size: 11px; color: #8896b3; }
+
+  /* ===== RESPONSIVE TABLE ===== */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-align: left; padding: 10px 14px; border-bottom: 1px solid #f0f2f8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .data-table td { font-size: 13px; color: var(--text); padding: 12px 14px; border-bottom: 1px solid #f6f8fc; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #f9fbfd; }
+  .hash-code { font-family: monospace; font-size: 12px; color: var(--text-sec); }
+
+  /* ===== BUTTONS / BADGES ===== */
+  .btn-sm {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: none; cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+  .btn-teal { background: rgba(29,158,117,0.1); color: var(--teal-mid); }
+  .btn-red { background: rgba(226,75,74,0.1); color: #e24b4a; }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #d0d5e8; border-radius: 3px; }
+
+  /* ===== ALERTS ===== */
+  .alert {
+    padding: 12px 16px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .alert.success { background: #E8F5E9; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .alert.info { background: #E3F2FD; color: #1565c0; border: 1px solid #90CAF9; }
+  .alert.warning { background: #FFF8E1; color: #f57f17; border: 1px solid #FFE082; }
+
+  .view-all { font-size: 12px; color: var(--teal-mid); font-weight: 600; text-decoration: none; cursor: pointer; }
+
+  /* ===== LOGIN PAGE ===== */
+  .login-page {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: #0a0e1a;
+    align-items: center; justify-content: center;
+  }
+  .login-page.active { display: flex; }
+  .login-bg-circle {
+    position: absolute; border-radius: 50%; pointer-events: none;
+  }
+  .login-card {
+    background: #ffffff; border-radius: 24px; padding: 44px 40px;
+    width: 420px; position: relative; z-index: 2;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.05);
+  }
+  .login-logo {
+    display: flex; align-items: center; gap: 10px; justify-content: center;
+    margin-bottom: 28px;
+  }
+  .login-logo-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #00F5A0, #4DA3FF);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .login-logo-text { font-size: 20px; font-weight: 800; color: #0a0e1a; }
+  .login-logo-text span { color: #1D9E75; }
+  .login-title { font-size: 22px; font-weight: 800; color: #0a0e1a; text-align: center; margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: #8896b3; text-align: center; margin-bottom: 30px; }
+  .login-field { margin-bottom: 18px; }
+  .login-label { font-size: 12px; font-weight: 600; color: #4a5568; margin-bottom: 6px; display: block; }
+  .login-input-wrap { position: relative; }
+  .login-input {
+    width: 100%; padding: 13px 44px 13px 44px;
+    border: 1.5px solid #e8eaf0; border-radius: 12px;
+    font-family: 'Inter', sans-serif; font-size: 14px; color: #0a0e1a;
+    background: #f9fafb; outline: none; transition: border 0.2s, background 0.2s;
+  }
+  .login-input:focus { border-color: #1D9E75; background: #fff; }
+  .login-input-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; pointer-events: none;
+  }
+  .login-pw-toggle {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; cursor: pointer; color: #8896b3; background: none; border: none;
+    padding: 0; line-height: 1;
+  }
+  .login-error {
+    background: #fff0f0; border: 1px solid #fca5a5; color: #b91c1c;
+    border-radius: 10px; padding: 11px 14px; font-size: 13px; font-weight: 500;
+    margin-bottom: 16px; display: none; align-items: center; gap: 8px;
+  }
+  .login-error.show { display: flex; }
+  .login-btn {
+    width: 100%; padding: 14px; background: #1D9E75; color: #fff;
+    border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.2s;
+    margin-top: 4px;
+  }
+  .login-btn:hover { background: #0F6E56; }
+  .login-btn:active { transform: scale(0.99); }
+  .login-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; }
+  .login-divider::before, .login-divider::after {
+    content: ''; flex: 1; height: 1px; background: #e8eaf0;
+  }
+  .login-divider span { font-size: 12px; color: #8896b3; white-space: nowrap; }
+  .login-biometric {
+    width: 100%; padding: 12px; background: #f9fafb;
+    border: 1.5px solid #e8eaf0; border-radius: 12px;
+    font-size: 14px; font-weight: 600; color: #4a5568;
+    cursor: pointer; font-family: 'Inter', sans-serif; transition: border 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .login-biometric:hover { border-color: #1D9E75; color: #1D9E75; }
+  .login-footer-text { font-size: 12px; color: #8896b3; text-align: center; margin-top: 20px; }
+  .login-footer-text a { color: #1D9E75; font-weight: 600; text-decoration: none; cursor: pointer; }
+  .login-pq-badge {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    font-size: 11px; color: #1D9E75; font-weight: 600; margin-top: 18px;
+  }
+  .login-pq-dot { width: 6px; height: 6px; border-radius: 50%; background: #1D9E75; animation: pulse 1.5s infinite; }
+  .login-forgot { font-size: 12px; color: #1D9E75; font-weight: 600; cursor: pointer; text-align: right; margin-top: -12px; margin-bottom: 18px; }
+
+  /* footer */
+  footer { background: #0a0e1a; padding: 40px 60px; text-align: center; }
+  .footer-brand { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .footer-brand span { color: var(--teal); }
+  .footer-desc { font-size: 12px; color: #8896b3; margin-bottom: 16px; }
+  .footer-badges { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .footer-badge {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: #aab4c8; font-size: 11px; padding: 5px 12px; border-radius: 8px;
+  }
+  .footer-copy { margin-top: 20px; font-size: 11px; color: #3a4560; }
+
+  /* ===== LANDING PAGE SECTIONS ===== */
+  .landing-wrap { background: var(--bg); }
+</style>
+</head>
+<body>
+
+<!-- ===== TOP NAV ===== -->
+<nav class="topnav">
+  <a class="nav-brand" href="#" onclick="showPage('landing')">
+    <div class="logo-icon">🔐</div>
+    Secure<span>Wallet</span>
+  </a>
+  <div class="nav-links" id="navLinks">
+    <a href="#" onclick="showLanding()">Home</a>
+    <a href="#" onclick="showPage('dashboard')">Dashboard</a>
+    <a href="#" onclick="showPage('send')">Send</a>
+    <a href="#" onclick="showPage('receive')">Receive</a>
+    <a href="#" onclick="showPage('transactions')">Transactions</a>
+    <a href="#" onclick="showPage('security')">Security</a>
+    <a href="#" onclick="showPage('settings')">Settings</a>
+  </div>
+  <div class="nav-right">
+    <div class="nav-badge">⚛ Post-Quantum</div>
+    <div class="nav-badge" style="border-color:rgba(77,163,255,0.3);background:rgba(77,163,255,0.1);color:#4DA3FF;">⛓ Blockchain</div>
+    <a class="btn-launch" href="#" onclick="showPage('dashboard')">Launch App</a>
+  </div>
+</nav>
+
+<!-- ===== LOGIN PAGE ===== -->
+<div class="login-page active" id="loginPage">
+  <!-- Animated background blobs -->
+  <div class="login-bg-circle" style="width:500px;height:500px;background:radial-gradient(circle,rgba(0,245,160,0.07),transparent 70%);top:-100px;right:-100px;"></div>
+  <div class="login-bg-circle" style="width:400px;height:400px;background:radial-gradient(circle,rgba(77,163,255,0.06),transparent 70%);bottom:-80px;left:-80px;"></div>
+
+  <div class="login-card">
+    <!-- Logo -->
+    <div class="login-logo">
+      <div class="login-logo-icon">🔐</div>
+      <div class="login-logo-text">Secure<span>Wallet</span></div>
+    </div>
+
+    <div class="login-title">Welcome Back</div>
+    <div class="login-sub">Login to your quantum-safe wallet</div>
+
+    <!-- Error message -->
+    <div class="login-error" id="loginError">
+      <span>⚠</span> Invalid User ID or Password. Please try again.
+    </div>
+
+    <!-- User ID -->
+    <div class="login-field">
+      <label class="login-label">User ID</label>
+      <div class="login-input-wrap">
+        <span class="login-input-icon">👤</span>
+        <input class="login-input" type="text" id="loginId" placeholder="Enter your User ID" autocomplete="username">
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <div class="login-input-wrap">
+        <span class="login-input-icon">🔒</span>
+        <input class="login-input" type="password" id="loginPw" placeholder="Enter your password" autocomplete="current-password">
+        <button class="login-pw-toggle" id="pwToggle" onclick="togglePw()" type="button">👁</button>
+      </div>
+    </div>
+
+    <div class="login-forgot">Forgot Password?</div>
+
+    <!-- Submit -->
+    <button class="login-btn" onclick="doLogin()">Login</button>
+
+    <div class="login-divider"><span>or</span></div>
+
+    <button class="login-biometric" onclick="doLogin()">
+      <span>🪪</span> Login with Biometrics
+    </button>
+
+    <div class="login-footer-text">
+      Don't have an account? <a onclick="doLogin()">Create Wallet</a>
+    </div>
+
+    <div class="login-pq-badge">
+      <div class="login-pq-dot"></div>
+      Quantum-Safe Key Generated Successfully
+    </div>
+  </div>
+</div>
+
+<!-- ===== LANDING PAGE ===== -->
+<div class="landing-wrap" id="landingPage" style="display:none;">
+  <!-- Hero -->
+  <div class="hero hero-bg-circles" style="padding-top: calc(var(--nav-h) + 60px);">
+    <div class="hero-content">
+      <div class="hero-pill"><span></span> Final Year Project — BSCS 2025</div>
+      <h1 class="hero-title">Secure Digital Wallet<br>with <em>Blockchain</em> &<br><em>Post-Quantum</em></h1>
+      <p class="hero-desc">A future-proof decentralized wallet protected by Kyber & Dilithium post-quantum algorithms. Send, receive, and manage digital assets with quantum-resistant encryption.</p>
+      <div class="hero-btns">
+        <button class="hero-btn-primary" onclick="showPage('dashboard')">🚀 Open Dashboard</button>
+        <button class="hero-btn-outline" onclick="document.getElementById('featuresSection').scrollIntoView({behavior:'smooth'})">📖 Learn More</button>
+      </div>
+      <div class="hero-stats">
+        <div>
+          <div class="hero-stat-num">$24,586</div>
+          <div class="hero-stat-label">Total Portfolio</div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,0.08)"></div>
+        <div>
+          <div class="hero-stat-num">92/100</div>
+          <div class="hero-stat-label">Security Score</div>
+        </div>
+        <div style="width:1px;background:rgba(255,255,255,0.08)"></div>
+        <div>
+          <div class="hero-stat-num">256-bit</div>
+          <div class="hero-stat-label">PQ Encryption</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <!-- Phone mockup -->
+      <div class="phone-mockup">
+        <div class="phone-notch"></div>
+        <div class="phone-balance-label">Total Balance</div>
+        <div class="phone-balance">$24,586.32</div>
+        <div class="phone-change">▲ +3.38% (24h)</div>
+        <div class="phone-actions">
+          <div class="phone-action">
+            <div class="phone-action-btn">↑</div>
+            <div class="phone-action-label">Send</div>
+          </div>
+          <div class="phone-action">
+            <div class="phone-action-btn">↓</div>
+            <div class="phone-action-label">Receive</div>
+          </div>
+          <div class="phone-action">
+            <div class="phone-action-btn">⊡</div>
+            <div class="phone-action-label">Scan</div>
+          </div>
+          <div class="phone-action">
+            <div class="phone-action-btn">⇌</div>
+            <div class="phone-action-label">Swap</div>
+          </div>
+        </div>
+        <div class="phone-divider"></div>
+        <div class="phone-tx-title">Recent Transactions</div>
+        <div class="phone-tx">
+          <div class="phone-tx-dot" style="background:#1a1f35;color:#0abf7a;">↓</div>
+          <div class="phone-tx-info">
+            <div class="phone-tx-name">From: 0x6e4f…d4l2</div>
+            <div class="phone-tx-time">2m ago</div>
+          </div>
+          <div class="phone-tx-amt" style="color:#0abf7a;">+1.25 ETH</div>
+        </div>
+        <div class="phone-tx">
+          <div class="phone-tx-dot" style="background:#1a1f35;color:#e24b4a;">↑</div>
+          <div class="phone-tx-info">
+            <div class="phone-tx-name">To: 0x4d0c…d4e5</div>
+            <div class="phone-tx-time">1h ago</div>
+          </div>
+          <div class="phone-tx-amt" style="color:#e24b4a;">-0.52 BTC</div>
+        </div>
+      </div>
+      <!-- Floating badges -->
+      <div class="float-badge" style="top:-20px;right:-60px;">
+        <div class="badge-dot" style="background:#0abf7a;"></div> PQ-Safe Encrypted
+      </div>
+      <div class="float-badge" style="bottom:60px;left:-70px;">
+        <div class="badge-dot" style="background:#4DA3FF;"></div> Blockchain Verified
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="features-section" id="featuresSection">
+    <div class="section-eyebrow">Why Choose SecureWallet</div>
+    <h2 class="section-title">Built for the Quantum Era</h2>
+    <p class="section-desc">Combining blockchain immutability with next-generation post-quantum cryptography to keep your assets safe against both today's and tomorrow's threats.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon teal">🔐</div>
+        <div class="feature-card-title">Post-Quantum Cryptography</div>
+        <div class="feature-card-desc">Protected by NIST-standardized Kyber (KEM) and Dilithium (signatures), ensuring security against quantum computer attacks.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon blue">⛓</div>
+        <div class="feature-card-title">Decentralized & Transparent</div>
+        <div class="feature-card-desc">Built on blockchain technology for full transparency, immutability, and trustless peer-to-peer transactions without intermediaries.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon purple">🪙</div>
+        <div class="feature-card-title">Multi-Asset Support</div>
+        <div class="feature-card-desc">Manage Ethereum, Bitcoin, USDC, and other digital assets from a single secure wallet interface.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon orange">🛡</div>
+        <div class="feature-card-title">2FA & Biometric Auth</div>
+        <div class="feature-card-desc">Two-factor authentication combined with biometric login ensures only you can access your wallet.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon red">📊</div>
+        <div class="feature-card-title">Security Score System</div>
+        <div class="feature-card-desc">Real-time security assessment with actionable recommendations to maximize your wallet's protection score.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon green">🔄</div>
+        <div class="feature-card-title">Quantum-Safe Key Gen</div>
+        <div class="feature-card-desc">Keys generated using lattice-based algorithms that are provably resistant to Shor's algorithm and quantum attacks.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="tech-section">
+    <div style="text-align:center;margin-bottom:48px;">
+      <div class="section-eyebrow" style="color:var(--teal);">Technology Stack</div>
+      <h2 class="section-title" style="color:#fff;">Powered By Cutting-Edge Tech</h2>
+    </div>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-icon">⚛️</div>
+        <div class="tech-name">Kyber (CRYSTALS)</div>
+        <div class="tech-desc">NIST PQ Key Encapsulation Mechanism — Lattice-based, quantum-safe</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">✍️</div>
+        <div class="tech-name">Dilithium</div>
+        <div class="tech-desc">Post-quantum digital signatures for transaction authentication</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">⛓️</div>
+        <div class="tech-name">Ethereum Blockchain</div>
+        <div class="tech-desc">Decentralized, immutable ledger with smart contract support</div>
+      </div>
+      <div class="tech-card">
+        <div class="tech-icon">🔒</div>
+        <div class="tech-name">AES-256-GCM</div>
+        <div class="tech-desc">Symmetric encryption for secure local key storage and data protection</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="footer-brand">Secure<span>Wallet</span></div>
+    <div class="footer-desc">Final Year Project — Blockchain & Post-Quantum Security</div>
+    <div class="footer-badges">
+      <div class="footer-badge">🎓 BSCS Final Year Project</div>
+      <div class="footer-badge">🔐 Post-Quantum Cryptography</div>
+      <div class="footer-badge">⛓ Blockchain Technology</div>
+      <div class="footer-badge">🛡 NIST PQC Standards</div>
+    </div>
+    <div class="footer-copy">© 2025 SecureWallet FYP. All rights reserved.</div>
+  </footer>
+</div>
+
+<!-- ===== APP SHELL (Dashboard, etc.) ===== -->
+<div class="layout" id="appShell" style="display:none;">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Main</div>
+      <a class="sidebar-link active" href="#" onclick="switchPage('dashboard')">
+        <span class="sidebar-icon">📊</span> Dashboard
+      </a>
+      <a class="sidebar-link" href="#" onclick="switchPage('transactions')">
+        <span class="sidebar-icon">🔄</span> Transactions
+        <span class="sidebar-badge">156</span>
+      </a>
+      <a class="sidebar-link" href="#" onclick="switchPage('send')">
+        <span class="sidebar-icon">↑</span> Send Assets
+      </a>
+      <a class="sidebar-link" href="#" onclick="switchPage('receive')">
+        <span class="sidebar-icon">↓</span> Receive Assets
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Security</div>
+      <a class="sidebar-link" href="#" onclick="switchPage('security')">
+        <span class="sidebar-icon">🛡</span> Security Center
+        <span class="sidebar-badge" style="background:rgba(226,75,74,0.15);color:#e24b4a;">!</span>
+      </a>
+      <a class="sidebar-link" href="#" onclick="switchPage('settings')">
+        <span class="sidebar-icon">⚙</span> Settings
+      </a>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Account</div>
+      <a class="sidebar-link" href="#" onclick="doLogout()">
+        <span class="sidebar-icon">🚪</span> Logout
+      </a>
+    </div>
+    <div style="margin-top:auto;padding:20px;">
+      <div style="background:rgba(0,245,160,0.06);border:1px solid rgba(0,245,160,0.15);border-radius:12px;padding:14px;">
+        <div style="font-size:11px;font-weight:700;color:var(--teal);margin-bottom:4px;">⚛ PQ Protection</div>
+        <div style="font-size:10px;color:#8896b3;line-height:1.5;">Kyber + Dilithium<br>Active & Running</div>
+        <div style="width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-top:8px;">
+          <div style="width:92%;height:100%;background:var(--teal);border-radius:2px;"></div>
+        </div>
+        <div style="font-size:10px;color:var(--teal);margin-top:4px;">92% Security Score</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-sub">Welcome back, John Doe — Last login: 2 minutes ago</div>
+        </div>
+        <div class="header-actions">
+          <div class="nav-badge" style="background:rgba(0,245,160,0.1);border:1px solid rgba(0,245,160,0.3);color:var(--teal);">⚛ Quantum Secure</div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card" style="--accent:var(--teal);">
+          <div class="stat-label">Total Balance</div>
+          <div class="stat-value">$24,586</div>
+          <div class="stat-change up">▲ +3.38% (24h)</div>
+          <div class="stat-icon">💰</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--blue-acc);">
+          <div class="stat-label">Total Assets</div>
+          <div class="stat-value">7</div>
+          <div class="stat-change up">3 active chains</div>
+          <div class="stat-icon">🪙</div>
+        </div>
+        <div class="stat-card" style="--accent:var(--purple-acc);">
+          <div class="stat-label">Total Transactions</div>
+          <div class="stat-value">156</div>
+          <div class="stat-change up">▲ +12 this week</div>
+          <div class="stat-icon">🔄</div>
+        </div>
+        <div class="stat-card" style="--accent:#0abf7a;">
+          <div class="stat-label">Security Score</div>
+          <div class="stat-value">92</div>
+          <div class="stat-change up">Excellent</div>
+          <div class="stat-icon">🛡</div>
+        </div>
+      </div>
+
+      <!-- Charts row -->
+      <div class="card-grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div class="card-title" style="margin-bottom:0;">Portfolio Overview</div>
+            <div style="font-size:12px;color:var(--text-muted);">Last 7 Days</div>
+          </div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar-col"><div class="chart-bar" style="height:55%;"></div><div class="chart-label">May 10</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:65%;"></div><div class="chart-label">May 11</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:50%;"></div><div class="chart-label">May 12</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:72%;"></div><div class="chart-label">May 13</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:60%;"></div><div class="chart-label">May 14</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:85%;"></div><div class="chart-label">May 15</div></div>
+            <div class="chart-bar-col"><div class="chart-bar" style="height:92%;"></div><div class="chart-label">May 16</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Asset Allocation</div>
+          <!-- Donut -->
+          <div style="display:flex;align-items:center;gap:24px;">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#f0f2f8" stroke-width="16"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#7B61FF" stroke-width="16"
+                stroke-dasharray="263.9" stroke-dashoffset="0" transform="rotate(-90 55 55)"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#F7931A" stroke-width="16"
+                stroke-dasharray="263.9" stroke-dashoffset="-118.7" transform="rotate(-90 55 55)"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#2979ff" stroke-width="16"
+                stroke-dasharray="263.9" stroke-dashoffset="-197.9" transform="rotate(-90 55 55)"/>
+              <circle cx="55" cy="55" r="42" fill="none" stroke="#0abf7a" stroke-width="16"
+                stroke-dasharray="263.9" stroke-dashoffset="-237.5" transform="rotate(-90 55 55)"/>
+              <text x="55" y="58" text-anchor="middle" font-size="13" font-weight="800" fill="#0a0e1a">7 Assets</text>
+            </svg>
+            <ul class="alloc-list" style="flex:1;">
+              <li class="alloc-item">
+                <div class="alloc-dot" style="background:#7B61FF;"></div>
+                <div class="alloc-name">ETH</div>
+                <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:45%;background:#7B61FF;"></div></div>
+                <div class="alloc-pct">45%</div>
+              </li>
+              <li class="alloc-item">
+                <div class="alloc-dot" style="background:#F7931A;"></div>
+                <div class="alloc-name">BTC</div>
+                <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:30%;background:#F7931A;"></div></div>
+                <div class="alloc-pct">30%</div>
+              </li>
+              <li class="alloc-item">
+                <div class="alloc-dot" style="background:#2979ff;"></div>
+                <div class="alloc-name">USDC</div>
+                <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:15%;background:#2979ff;"></div></div>
+                <div class="alloc-pct">15%</div>
+              </li>
+              <li class="alloc-item">
+                <div class="alloc-dot" style="background:#0abf7a;"></div>
+                <div class="alloc-name">Others</div>
+                <div class="alloc-bar-wrap"><div class="alloc-bar" style="width:10%;background:#0abf7a;"></div></div>
+                <div class="alloc-pct">10%</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transactions + Security -->
+      <div class="card-grid-2">
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+            <div class="card-title" style="margin-bottom:0;">Recent Transactions</div>
+            <a class="view-all" onclick="switchPage('transactions')">View All →</a>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon received">↓</div>
+            <div class="tx-info"><div class="tx-name">Received ETH</div><div class="tx-time">From: 0x6e4f…d4l2 · 2m ago</div></div>
+            <div><div class="tx-amount pos">+1.25 ETH</div><div class="tx-status confirmed">Confirmed</div></div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon btc">₿</div>
+            <div class="tx-info"><div class="tx-name">Sent BTC</div><div class="tx-time">To: 0x4d0c…d4e5 · 1h ago</div></div>
+            <div><div class="tx-amount neg">-0.52 BTC</div><div class="tx-status confirmed">Confirmed</div></div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon usdc">$</div>
+            <div class="tx-info"><div class="tx-name">Received USDC</div><div class="tx-time">From: 0xa1d3…7b8 · 5h ago</div></div>
+            <div><div class="tx-amount pos">+3.20 USDC</div><div class="tx-status confirmed">Confirmed</div></div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon eth">Ξ</div>
+            <div class="tx-info"><div class="tx-name">Sent ETH</div><div class="tx-time">To: 0xb7f1…c3d8 · 14h ago</div></div>
+            <div><div class="tx-amount neg">-0.10 ETH</div><div class="tx-status pending">Pending</div></div>
+          </div>
+          <div class="tx-item">
+            <div class="tx-icon btc">₿</div>
+            <div class="tx-info"><div class="tx-name">Received BTC</div><div class="tx-time">From: 0x8f2a…5c1 · 20h ago</div></div>
+            <div><div class="tx-amount pos">+0.85 BTC</div><div class="tx-status confirmed">Confirmed</div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Security Center</div>
+          <div class="security-score-wrap">
+            <div class="score-ring">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#f0f2f8" stroke-width="10"/>
+                <circle cx="60" cy="60" r="50" fill="none" stroke="#1D9E75" stroke-width="10"
+                  stroke-linecap="round"
+                  stroke-dasharray="314.16"
+                  stroke-dashoffset="25.1"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="score-ring-text">
+                <div class="score-number">92</div>
+                <div class="score-max">/100</div>
+              </div>
+            </div>
+            <div class="score-label">Excellent</div>
+          </div>
+          <div class="security-item"><div class="sec-name">Post-Quantum Security</div><div class="sec-badge active">Active</div></div>
+          <div class="security-item"><div class="sec-name">Encryption Status</div><div class="sec-badge active">Active</div></div>
+          <div class="security-item"><div class="sec-name">Key Strength</div><div class="sec-badge strong">Strong</div></div>
+          <div class="security-item"><div class="sec-name">2FA Authentication</div><div class="sec-badge enabled">Enabled</div></div>
+          <div class="security-item"><div class="sec-name">Backup Status</div><div class="sec-badge completed">Completed</div></div>
+          <button class="btn-primary" style="margin-top:16px;" onclick="switchPage('security')">Manage Security</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEND PAGE -->
+    <div class="page" id="page-send">
+      <div class="page-header">
+        <div><div class="page-title">Send Assets</div><div class="page-sub">Transfer crypto securely with quantum encryption</div></div>
+      </div>
+      <div style="max-width:560px;">
+        <div class="card">
+          <div class="card-title">Send Assets</div>
+          <div class="alert info">🔐 Quantum Encryption active — all transactions are PQ-protected</div>
+          <div class="form-group">
+            <label class="form-label">To (Wallet Address)</label>
+            <input class="form-input" type="text" placeholder="Enter wallet address or scan QR">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Asset</label>
+            <select class="form-select">
+              <option>Ethereum (ETH)</option>
+              <option>Bitcoin (BTC)</option>
+              <option>USDC</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount</label>
+            <div class="input-suffix">
+              <input type="number" placeholder="0.00" step="0.001">
+              <span>ETH</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Available: 2.546 ETH</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Network Fee</label>
+            <input class="form-input" type="text" value="0.0002 ETH" readonly style="background:#f9fbfd;color:var(--text-muted);">
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Quantum Encryption</div>
+              <div class="toggle-sub">Post-Quantum protection for this transaction</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <button class="btn-primary">Review Transaction</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECEIVE PAGE -->
+    <div class="page" id="page-receive">
+      <div class="page-header">
+        <div><div class="page-title">Receive Assets</div><div class="page-sub">Share your address or QR code to receive crypto</div></div>
+      </div>
+      <div class="card-grid-2">
+        <!-- Left: QR + address -->
+        <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:20px;">
+          <div class="card-title" style="align-self:flex-start;margin-bottom:0;">Your Wallet QR Code</div>
+
+          <!-- Asset selector -->
+          <div style="width:100%;">
+            <label class="form-label">Select Asset</label>
+            <select class="form-select" id="receiveAssetSelect" onchange="updateReceiveAsset(this.value)">
+              <option value="ETH">Ethereum (ETH)</option>
+              <option value="BTC">Bitcoin (BTC)</option>
+              <option value="USDC">USDC</option>
+            </select>
+          </div>
+
+          <!-- QR Code -->
+          <div class="qr-box" style="width:100%;">
+            <svg width="160" height="160" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+              <rect width="140" height="140" fill="white"/>
+              <rect x="10" y="10" width="35" height="35" rx="4" fill="#0a0e1a"/>
+              <rect x="16" y="16" width="23" height="23" rx="2" fill="white"/>
+              <rect x="21" y="21" width="13" height="13" rx="1" fill="#0a0e1a"/>
+              <rect x="95" y="10" width="35" height="35" rx="4" fill="#0a0e1a"/>
+              <rect x="101" y="16" width="23" height="23" rx="2" fill="white"/>
+              <rect x="106" y="21" width="13" height="13" rx="1" fill="#0a0e1a"/>
+              <rect x="10" y="95" width="35" height="35" rx="4" fill="#0a0e1a"/>
+              <rect x="16" y="101" width="23" height="23" rx="2" fill="white"/>
+              <rect x="21" y="106" width="13" height="13" rx="1" fill="#0a0e1a"/>
+              <rect x="57" y="57" width="26" height="26" rx="6" fill="#1D9E75"/>
+              <text x="70" y="74" text-anchor="middle" font-size="14" fill="white" id="qrCenterSymbol">Ξ</text>
+              <rect x="55" y="10" width="7" height="7" fill="#0a0e1a"/><rect x="65" y="10" width="7" height="7" fill="#0a0e1a"/><rect x="75" y="10" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="55" y="20" width="7" height="7" fill="#0a0e1a"/><rect x="75" y="20" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="10" y="55" width="7" height="7" fill="#0a0e1a"/><rect x="10" y="65" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="10" y="75" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="95" y="55" width="7" height="7" fill="#0a0e1a"/><rect x="123" y="55" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="95" y="65" width="7" height="7" fill="#0a0e1a"/><rect x="115" y="65" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="95" y="75" width="7" height="7" fill="#0a0e1a"/><rect x="105" y="75" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="55" y="95" width="7" height="7" fill="#0a0e1a"/><rect x="65" y="95" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="55" y="105" width="7" height="7" fill="#0a0e1a"/><rect x="75" y="105" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="55" y="115" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="85" y="95" width="7" height="7" fill="#0a0e1a"/><rect x="105" y="95" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="85" y="105" width="7" height="7" fill="#0a0e1a"/><rect x="95" y="105" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="115" y="115" width="7" height="7" fill="#0a0e1a"/><rect x="105" y="115" width="7" height="7" fill="#0a0e1a"/>
+              <rect x="125" y="105" width="7" height="7" fill="#0a0e1a"/>
+            </svg>
+            <div class="wallet-addr" id="receiveAddrDisplay">Your Wallet Address<br>0x7a3f...b9c12</div>
+          </div>
+
+          <div class="btn-row" style="width:100%;">
+            <button class="btn-outline" onclick="copyAddr()">📋 Copy Address</button>
+            <button class="btn-outline">📤 Share</button>
+          </div>
+          <div id="copyToast" style="display:none;font-size:12px;font-weight:600;color:#1D9E75;">✅ Address copied to clipboard!</div>
+        </div>
+
+        <!-- Right: asset info + recent incoming -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <!-- Asset info card -->
+          <div class="card">
+            <div class="card-title">Asset Details</div>
+            <div style="display:flex;align-items:center;gap:14px;padding:14px;background:#f6f8fc;border-radius:12px;margin-bottom:16px;">
+              <div id="receiveAssetIcon" style="width:48px;height:48px;border-radius:14px;background:#E8E6FF;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;">Ξ</div>
+              <div>
+                <div id="receiveAssetName" style="font-size:16px;font-weight:800;color:var(--text);">Ethereum</div>
+                <div id="receiveAssetTicker" style="font-size:12px;color:var(--text-muted);margin-top:2px;">ETH · ERC-20</div>
+              </div>
+              <div style="margin-left:auto;text-align:right;">
+                <div id="receiveAssetBal" style="font-size:15px;font-weight:700;color:var(--text);">2.546 ETH</div>
+                <div id="receiveAssetUsd" style="font-size:12px;color:var(--text-muted);">≈ $8,412.00</div>
+              </div>
+            </div>
+            <div class="security-item">
+              <div class="sec-name">Network</div>
+              <div id="receiveNetwork" style="font-size:13px;font-weight:600;color:var(--text);">Ethereum Mainnet</div>
+            </div>
+            <div class="security-item">
+              <div class="sec-name">Confirmation Time</div>
+              <div id="receiveConfirmTime" style="font-size:13px;font-weight:600;color:var(--text);">~15 seconds</div>
+            </div>
+            <div class="security-item">
+              <div class="sec-name">Minimum Receive</div>
+              <div id="receiveMinAmt" style="font-size:13px;font-weight:600;color:var(--text);">0.0001 ETH</div>
+            </div>
+            <div class="alert info" style="margin-top:14px;margin-bottom:0;">
+              ⚠ Only send <span id="receiveAssetAlert">ETH</span> to this address. Sending other assets may result in permanent loss.
+            </div>
+          </div>
+
+          <!-- Recent incoming -->
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+              <div class="card-title" style="margin-bottom:0;">Recent Incoming</div>
+              <a class="view-all" onclick="switchPage('transactions')">View All →</a>
+            </div>
+            <div class="tx-item">
+              <div class="tx-icon received">↓</div>
+              <div class="tx-info"><div class="tx-name">Received ETH</div><div class="tx-time">From: 0x6e4f…d4l2 · 2m ago</div></div>
+              <div class="tx-amount pos">+1.25 ETH</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-icon usdc">$</div>
+              <div class="tx-info"><div class="tx-name">Received USDC</div><div class="tx-time">From: 0xa1d3…7b8 · 5h ago</div></div>
+              <div class="tx-amount pos">+3.20 USDC</div>
+            </div>
+            <div class="tx-item">
+              <div class="tx-icon btc">₿</div>
+              <div class="tx-info"><div class="tx-name">Received BTC</div><div class="tx-time">From: 0x8f2a…5c1 · 20h ago</div></div>
+              <div class="tx-amount pos">+0.85 BTC</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS PAGE -->
+    <div class="page" id="page-transactions">
+      <div class="page-header">
+        <div><div class="page-title">Transactions</div><div class="page-sub">All 156 transactions across your wallet</div></div>
+        <div class="header-actions">
+          <select class="form-select" style="width:auto;padding:8px 14px;font-size:13px;">
+            <option>All</option><option>Sent</option><option>Received</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Hash</th><th>Type</th><th>Asset</th><th>Amount</th><th>Status</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="hash-code">0x80f3c…n182o4</span></td>
+              <td><span style="color:#0abf7a;font-weight:600;">Received</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon eth" style="width:22px;height:22px;font-size:11px;border-radius:6px;">Ξ</span>ETH</span></td>
+              <td class="tx-amount pos">+1.25 ETH</td>
+              <td><span class="tx-status confirmed">Confirmed</span></td>
+              <td style="color:var(--text-muted);">2m ago</td>
+            </tr>
+            <tr>
+              <td><span class="hash-code">0x8f9c…d4e5f6</span></td>
+              <td><span style="color:#e24b4a;font-weight:600;">Sent</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon btc" style="width:22px;height:22px;font-size:11px;border-radius:6px;">₿</span>BTC</span></td>
+              <td class="tx-amount neg">-0.52 BTC</td>
+              <td><span class="tx-status confirmed">Confirmed</span></td>
+              <td style="color:var(--text-muted);">1h ago</td>
+            </tr>
+            <tr>
+              <td><span class="hash-code">0xc1a7b…9e8d3</span></td>
+              <td><span style="color:#0abf7a;font-weight:600;">Received</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon usdc" style="width:22px;height:22px;font-size:11px;border-radius:6px;">$</span>USDC</span></td>
+              <td class="tx-amount pos">+3.20 USDC</td>
+              <td><span class="tx-status confirmed">Confirmed</span></td>
+              <td style="color:var(--text-muted);">5h ago</td>
+            </tr>
+            <tr>
+              <td><span class="hash-code">0xd4f2e…7b1c9</span></td>
+              <td><span style="color:#e24b4a;font-weight:600;">Sent</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon eth" style="width:22px;height:22px;font-size:11px;border-radius:6px;">Ξ</span>ETH</span></td>
+              <td class="tx-amount neg">-0.10 ETH</td>
+              <td><span class="tx-status pending">Pending</span></td>
+              <td style="color:var(--text-muted);">14h ago</td>
+            </tr>
+            <tr>
+              <td><span class="hash-code">0xe1c3a…2f5d7</span></td>
+              <td><span style="color:#0abf7a;font-weight:600;">Received</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon btc" style="width:22px;height:22px;font-size:11px;border-radius:6px;">₿</span>BTC</span></td>
+              <td class="tx-amount pos">+0.85 BTC</td>
+              <td><span class="tx-status confirmed">Confirmed</span></td>
+              <td style="color:var(--text-muted);">20h ago</td>
+            </tr>
+            <tr>
+              <td><span class="hash-code">0xf9b8d…3a6e2</span></td>
+              <td><span style="color:#0abf7a;font-weight:600;">Received</span></td>
+              <td><span style="display:flex;align-items:center;gap:6px;"><span class="tx-icon usdc" style="width:22px;height:22px;font-size:11px;border-radius:6px;">$</span>USDC</span></td>
+              <td class="tx-amount pos">+500 USDC</td>
+              <td><span class="tx-status confirmed">Confirmed</span></td>
+              <td style="color:var(--text-muted);">1d ago</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SECURITY PAGE -->
+    <div class="page" id="page-security">
+      <div class="page-header">
+        <div><div class="page-title">Security Center</div><div class="page-sub">Monitor and manage your wallet's security</div></div>
+      </div>
+      <div class="card-grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="card-title">Security Overview</div>
+          <div class="security-score-wrap">
+            <div class="score-ring">
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                <circle cx="70" cy="70" r="58" fill="none" stroke="#f0f2f8" stroke-width="12"/>
+                <circle cx="70" cy="70" r="58" fill="none" stroke="#1D9E75" stroke-width="12"
+                  stroke-linecap="round"
+                  stroke-dasharray="364.4"
+                  stroke-dashoffset="29.2"
+                  transform="rotate(-90 70 70)"/>
+              </svg>
+              <div class="score-ring-text">
+                <div class="score-number" style="font-size:36px;">92</div>
+                <div class="score-max">/100</div>
+              </div>
+            </div>
+            <div class="score-label" style="font-size:16px;">Excellent Security</div>
+          </div>
+          <div class="security-item">
+            <div>
+              <div class="sec-name">Post-Quantum Security</div>
+              <div style="font-size:11px;color:var(--text-muted);">Protected with Kyber & Dilithium Algorithms</div>
+            </div>
+            <div class="sec-badge active">Active</div>
+          </div>
+          <div class="security-item">
+            <div>
+              <div class="sec-name">Encryption Status</div>
+              <div style="font-size:11px;color:var(--text-muted);">All data is encrypted end-to-end</div>
+            </div>
+            <div class="sec-badge active">Active</div>
+          </div>
+          <div class="security-item">
+            <div>
+              <div class="sec-name">Key Strength</div>
+              <div style="font-size:11px;color:var(--text-muted);">Your private keys are strong and secure</div>
+            </div>
+            <div class="sec-badge strong">Strong</div>
+          </div>
+          <div class="security-item">
+            <div>
+              <div class="sec-name">2FA Authentication</div>
+              <div style="font-size:11px;color:var(--text-muted);">Two-factor authentication is enabled</div>
+            </div>
+            <div class="sec-badge enabled">Enabled</div>
+          </div>
+          <div class="security-item">
+            <div>
+              <div class="sec-name">Backup Status</div>
+              <div style="font-size:11px;color:var(--text-muted);">Your wallet backup is safe</div>
+            </div>
+            <div class="sec-badge completed">Completed</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Security Actions</div>
+          <div class="card-grid-3" style="margin-bottom:16px;">
+            <div class="security-action-card">
+              <div class="sec-action-icon">🔑</div>
+              <div class="sec-action-title">Regenerate Keys</div>
+              <div class="sec-action-desc">Generate new quantum-safe keys</div>
+            </div>
+            <div class="security-action-card">
+              <div class="sec-action-icon">💾</div>
+              <div class="sec-action-title">Backup Wallet</div>
+              <div class="sec-action-desc">Securely backup your wallet and keys</div>
+            </div>
+            <div class="security-action-card">
+              <div class="sec-action-icon">📋</div>
+              <div class="sec-action-title">View Security Logs</div>
+              <div class="sec-action-desc">Check recent security activities</div>
+            </div>
+          </div>
+          <div class="card-title">Security Settings</div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Post-Quantum Protection</div>
+              <div class="toggle-sub">Use Kyber & Dilithium for all operations</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Two-Factor Authentication</div>
+              <div class="toggle-sub">Require 2FA for all transactions</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Biometric Login</div>
+              <div class="toggle-sub">Use fingerprint / face ID to access wallet</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Auto-Lock Wallet</div>
+              <div class="toggle-sub">Lock wallet after 5 minutes of inactivity</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Transaction Notifications</div>
+              <div class="toggle-sub">Get alerts for all wallet activity</div>
+            </div>
+            <div class="toggle off"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS PAGE -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div><div class="page-title">Settings</div><div class="page-sub">Manage your account and preferences</div></div>
+      </div>
+      <div class="card-grid-2">
+        <div class="card">
+          <div class="profile-header">
+            <div class="avatar">JD</div>
+            <div>
+              <div style="font-size:17px;font-weight:700;color:var(--text);">John Doe</div>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">john.doe@example.com</div>
+              <div style="margin-top:8px;"><span class="sec-badge active" style="font-size:11px;">Verified Account</span></div>
+            </div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">👤</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">Profile</div>
+              <div class="settings-item-sub">Edit your personal information</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">🔐</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">Security</div>
+              <div class="settings-item-sub">2FA, biometrics, PQ settings</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">🎛</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">Preferences</div>
+              <div class="settings-item-sub">Language, currency, notifications</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">🔗</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">Connected Accounts</div>
+              <div class="settings-item-sub">Manage linked wallets & dApps</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">💾</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">Backup & Recovery</div>
+              <div class="settings-item-sub">Seed phrase and encrypted backup</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <div class="settings-item">
+            <div class="settings-item-icon">ℹ</div>
+            <div class="settings-item-info">
+              <div class="settings-item-title">About</div>
+              <div class="settings-item-sub">App version, licenses, team</div>
+            </div>
+            <div class="chevron">›</div>
+          </div>
+          <button class="btn-outline" style="margin-top:16px;color:#e24b4a;border-color:#fca5a5;" onclick="doLogout()">🚪 Logout</button>
+        </div>
+        <div class="card">
+          <div class="card-title">App Preferences</div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Dark Mode</div>
+              <div class="toggle-sub">Switch to dark interface</div>
+            </div>
+            <div class="toggle off"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Price Alerts</div>
+              <div class="toggle-sub">Notify on significant price changes</div>
+            </div>
+            <div class="toggle"></div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Analytics</div>
+              <div class="toggle-sub">Share anonymous usage data</div>
+            </div>
+            <div class="toggle off"></div>
+          </div>
+          <div style="height:1px;background:var(--border);margin:20px 0;"></div>
+          <div class="card-title">Wallet Info</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Primary Wallet Address</div>
+          <div class="wallet-addr" style="text-align:left;margin-bottom:16px;">0x7a3f...b9c12</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Encryption Algorithm</div>
+          <div style="font-size:13px;font-weight:600;color:var(--teal-mid);margin-bottom:16px;">Kyber-768 + Dilithium-3 (NIST PQC)</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Blockchain Network</div>
+          <div style="font-size:13px;font-weight:600;color:var(--text);">Ethereum Mainnet (Chain ID: 1)</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ===== AUTH =====
+  var VALID_ID = 'AsimAdmin';
+  var VALID_PW = '12345@123';
+  var isLoggedIn = false;
+
+  function doLogin() {
+    var id = document.getElementById('loginId').value.trim();
+    var pw = document.getElementById('loginPw').value;
+    var err = document.getElementById('loginError');
+
+    if (id === VALID_ID && pw === VALID_PW) {
+      isLoggedIn = true;
+      err.classList.remove('show');
+      document.getElementById('loginPage').classList.remove('active');
+      showLanding();
+    } else {
+      err.classList.add('show');
+      document.getElementById('loginPw').value = '';
+      document.getElementById('loginPw').focus();
+      // Shake animation
+      var card = document.querySelector('.login-card');
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = 'shake 0.4s ease';
+    }
+  }
+
+  function togglePw() {
+    var inp = document.getElementById('loginPw');
+    var btn = document.getElementById('pwToggle');
+    if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; }
+    else { inp.type = 'password'; btn.textContent = '👁'; }
+  }
+
+  // Allow Enter key on login
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.getElementById('loginPage').classList.contains('active')) {
+      doLogin();
+    }
+  });
+
+  // Shake keyframe
+  var styleEl = document.createElement('style');
+  styleEl.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}';
+  document.head.appendChild(styleEl);
+
+  // ===== NAVIGATION =====
+  function showLanding() {
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('landingPage').style.display = 'block';
+    document.getElementById('appShell').style.display = 'none';
+    document.querySelectorAll('.nav-links a').forEach((a,i) => {
+      a.classList.toggle('active', i === 0);
+    });
+  }
+
+  function showPage(name) {
+    if (!isLoggedIn) { showLoginPage(); return; }
+    document.getElementById('loginPage').classList.remove('active');
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    var pg = document.getElementById('page-' + name);
+    if (pg) pg.classList.add('active');
+    document.querySelectorAll('.sidebar-link').forEach(a => a.classList.remove('active'));
+    document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  }
+
+  function switchPage(name) { showPage(name); }
+
+  function showLoginPage() {
+    document.getElementById('loginPage').classList.add('active');
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('appShell').style.display = 'none';
+  }
+
+  function doLogout() {
+    isLoggedIn = false;
+    document.getElementById('loginId').value = '';
+    document.getElementById('loginPw').value = '';
+    document.getElementById('loginError').classList.remove('show');
+    showLoginPage();
+  }
+
+  // ===== RECEIVE ASSET SWITCHER =====
+  var receiveAssets = {
+    ETH: {
+      icon: 'Ξ', iconBg: '#E8E6FF', name: 'Ethereum', ticker: 'ETH · ERC-20',
+      balance: '2.546 ETH', usd: '≈ $8,412.00', network: 'Ethereum Mainnet',
+      confirm: '~15 seconds', min: '0.0001 ETH', addr: '0x7a3f...b9c12'
+    },
+    BTC: {
+      icon: '₿', iconBg: '#FFF3E0', name: 'Bitcoin', ticker: 'BTC · Native',
+      balance: '0.312 BTC', usd: '≈ $12,480.00', network: 'Bitcoin Mainnet',
+      confirm: '~10 minutes', min: '0.0001 BTC', addr: 'bc1q9x...m4p2k'
+    },
+    USDC: {
+      icon: '$', iconBg: '#E3F2FD', name: 'USD Coin', ticker: 'USDC · ERC-20',
+      balance: '3,694.32 USDC', usd: '≈ $3,694.32', network: 'Ethereum Mainnet',
+      confirm: '~15 seconds', min: '1 USDC', addr: '0x7a3f...b9c12'
+    }
+  };
+
+  function updateReceiveAsset(val) {
+    var a = receiveAssets[val];
+    if (!a) return;
+    document.getElementById('receiveAssetIcon').textContent = a.icon;
+    document.getElementById('receiveAssetIcon').style.background = a.iconBg;
+    document.getElementById('receiveAssetName').textContent = a.name;
+    document.getElementById('receiveAssetTicker').textContent = a.ticker;
+    document.getElementById('receiveAssetBal').textContent = a.balance;
+    document.getElementById('receiveAssetUsd').textContent = a.usd;
+    document.getElementById('receiveNetwork').textContent = a.network;
+    document.getElementById('receiveConfirmTime').textContent = a.confirm;
+    document.getElementById('receiveMinAmt').textContent = a.min;
+    document.getElementById('receiveAddrDisplay').innerHTML = 'Your Wallet Address<br>' + a.addr;
+    document.getElementById('receiveAssetAlert').textContent = val;
+    document.getElementById('qrCenterSymbol').textContent = a.icon;
+  }
+
+  function copyAddr() {
+    var sel = document.getElementById('receiveAssetSelect');
+    var val = sel ? sel.value : 'ETH';
+    var addr = receiveAssets[val] ? receiveAssets[val].addr : '0x7a3f...b9c12';
+    if (navigator.clipboard) { navigator.clipboard.writeText(addr).catch(function(){}); }
+    var toast = document.getElementById('copyToast');
+    if (toast) {
+      toast.style.display = 'block';
+      setTimeout(function(){ toast.style.display = 'none'; }, 2000);
+    }
+  }
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('toggle')) {
+      e.target.classList.toggle('off');
+    }
+  });
+</script>
+</body>
+</html>
